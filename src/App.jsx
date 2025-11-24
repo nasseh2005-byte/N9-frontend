@@ -1,20 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Menu, X, Upload, FileText, Download, Archive, 
-  Plus, Trash2, Calculator, Activity, Atom, FlaskConical, 
+  Trash2, Calculator, Activity, Atom, FlaskConical, 
   Settings, User, ChevronRight, ChevronLeft, Globe, 
-  LayoutGrid, Scissors, Combine, BookOpen, Loader2
+  LayoutGrid, Scissors, Combine, BookOpen, Loader2,
+  Phone, Mail, Video, Send, CalendarDays, GraduationCap, MapPin
 } from 'lucide-react';
 
-// --- رابط السيرفر الخلفي (Backend) الموجود على Render ---
+// --- رابط السيرفر الخاص بك ---
 const API_BASE_URL = "https://n9xium.onrender.com/api";
 
-// --- التعريفات والأنواع (Types) ---
-// ملاحظة: في ملفات .jsx العادية لا نحتاج لتعريفات TypeScript المعقدة، 
-// لكن سأبقي الهيكل نظيفاً ليعمل في بيئة Vite القياسية.
+// --- Types & Interfaces ---
 
-const translations = {
+type Lang = 'ar' | 'en';
+type Page = 
+  | 'home' | 'iumHome' | 'img2pdf' | 'zip' | 'schedule' 
+  | 'mergePdf' | 'splitPdf' | 'calculator' 
+  | 'graph' | 'physics' | 'chemistry' | 'contact';
+
+interface Translation {
+  [key: string]: { ar: string; en: string };
+}
+
+interface Subject {
+  id: number;
+  name: string;
+  teacher: string;
+  time: string;
+  participation: number;
+  attendance: number;
+  homework: number;
+  midterm: number;
+  final: number;
+}
+
+// --- Content & Translations ---
+
+const translations: Translation = {
   home: { ar: 'الرئيسية', en: 'Home' },
+  iumHome: { ar: 'بوابة الطالب (IUM Home)', en: 'Student Portal (IUM Home)' },
   tools: { ar: 'أدوات N9', en: 'N9 Tools' },
   universityName: { ar: 'الجامعة الإسلامية بمينيسوتا', en: 'Islamic University of Minnesota' },
   dept: { ar: 'قسم تكنولوجيا المعلومات', en: 'Department of Information Technology' },
@@ -52,16 +76,19 @@ const translations = {
   grades: { ar: 'الدرجات', en: 'Grades' },
   solve: { ar: 'حل المعادلة', en: 'Solve Equation' },
   calcResult: { ar: 'النتيجة', en: 'Result' },
+  studentForm: { ar: 'نموذج تسجيل الطالب', en: 'Student Registration Form' },
+  uniSchedule: { ar: 'جدول دوام الجامعة', en: 'University Schedule' },
 };
 
-// --- مكونات مساعدة (Components) ---
+// --- Helper Components ---
 
-const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
+const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }: any) => {
   const baseStyle = "px-6 py-2 rounded-lg font-bold transition-all duration-300 transform shadow-md flex items-center justify-center gap-2";
-  const variants = {
+  const variants: any = {
     primary: "bg-blue-600 hover:bg-blue-700 text-white border border-blue-500",
     gold: "bg-gradient-to-r from-yellow-600 to-yellow-400 hover:from-yellow-500 hover:to-yellow-300 text-black border border-yellow-300",
     outline: "bg-transparent border-2 border-current",
+    success: "bg-green-600 hover:bg-green-700 text-white",
   };
   return (
     <button 
@@ -74,7 +101,7 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
   );
 };
 
-const Card = ({ children, title, theme, className = '' }) => {
+const Card = ({ children, title, theme, className = '' }: any) => {
   const isGold = theme === 'n9';
   return (
     <div className={`p-6 rounded-2xl shadow-xl ${isGold ? 'bg-zinc-900 border border-yellow-600/30 text-yellow-50' : 'bg-white border border-blue-100 text-gray-800'} ${className}`}>
@@ -84,88 +111,69 @@ const Card = ({ children, title, theme, className = '' }) => {
   );
 };
 
-// --- التطبيق الرئيسي (Main App) ---
+// --- Main Application Component ---
 
 export default function App() {
-  const [lang, setLang] = useState('ar');
-  const [page, setPage] = useState('home');
+  const [lang, setLang] = useState<Lang>('ar');
+  const [page, setPage] = useState<Page>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  // حالة أدوات الملفات
-  const [selectedFiles, setSelectedFiles] = useState(null);
+  // File Tools State
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState(null);
-  const [statusMsg, setStatusMsg] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState<string>('');
 
-  // حالة الجدول الدراسي
-  const [subjects, setSubjects] = useState([]);
+  // Schedule State
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   
-  // حالة الآلة الحاسبة
+  // Calculator State
   const [calcInput, setCalcInput] = useState('');
   
-  // حالة الرسم البياني
-  const canvasRef = useRef(null);
+  // Graph State
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [graphEq, setGraphEq] = useState('x * x');
 
-  // حالة حل المعادلات
-  const [selectedPhyEq, setSelectedPhyEq] = useState('');
-  const [selectedChemEq, setSelectedChemEq] = useState('');
-  const [eqInputs, setEqInputs] = useState({});
-  const [eqResult, setEqResult] = useState(null);
+  // Equation Solvers State
+  const [selectedPhyEq, setSelectedPhyEq] = useState<string>('');
+  const [selectedChemEq, setSelectedChemEq] = useState<string>('');
+  const [eqInputs, setEqInputs] = useState<{[key:string]: number}>({});
+  const [eqResult, setEqResult] = useState<number | null>(null);
 
-  const t = (key) => translations[key] ? translations[key][lang] : key;
+  const t = (key: string) => translations[key] ? translations[key][lang] : key;
 
-  // --- دالة الاتصال بالسيرفر (API) ---
-  const handleFileProcess = async (endpoint) => {
+  // --- API Integration ---
+  const handleFileProcess = async (endpoint: string) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
-
-    setIsProcessing(true);
-    setStatusMsg('');
-    setDownloadUrl(null);
-
+    setIsProcessing(true); setStatusMsg(''); setDownloadUrl(null);
     const formData = new FormData();
-    // معالجة خاصة لأداة التقطيع لأن السيرفر يتوقع ملف واحد باسم 'file'
-    if (endpoint === 'split-pdf') {
-       formData.append('file', selectedFiles[0]);
-    } else {
-       for (let i = 0; i < selectedFiles.length; i++) {
-         formData.append('files', selectedFiles[i]);
-       }
-    }
+    if (endpoint === 'split-pdf') formData.append('file', selectedFiles[0]);
+    else for (let i = 0; i < selectedFiles.length; i++) formData.append('files', selectedFiles[i]);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
-        method: 'POST',
-        body: formData,
-      });
-
+      const response = await fetch(`${API_BASE_URL}/${endpoint}`, { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Server Error');
-
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      setDownloadUrl(url);
+      setDownloadUrl(window.URL.createObjectURL(blob));
       setStatusMsg('success');
     } catch (error) {
-      console.error(error);
-      setStatusMsg('error');
+      console.error(error); setStatusMsg('error');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // --- دوال المنطق (Logic Functions) ---
-
-  const handleAddSubject = (e) => {
+  // --- Helper Logic ---
+  const handleAddSubject = (e: React.FormEvent) => {
     e.preventDefault();
     if (subjects.length >= 10) return alert(lang === 'ar' ? 'الحد الأقصى 10 مواد' : 'Max 10 subjects');
-    const form = e.target;
+    const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    
-    const newSubject = {
+    const newSubject: Subject = {
       id: Date.now(),
-      name: formData.get('name'),
-      teacher: formData.get('teacher'),
-      time: formData.get('time'),
+      name: formData.get('name') as string,
+      teacher: formData.get('teacher') as string,
+      time: formData.get('time') as string,
       participation: Number(formData.get('participation')),
       attendance: Number(formData.get('attendance')),
       homework: Number(formData.get('homework')),
@@ -181,22 +189,12 @@ export default function App() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
+    const width = canvas.width; const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
-
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
+    ctx.strokeStyle = '#666'; ctx.lineWidth = 1; ctx.beginPath();
     ctx.moveTo(0, height / 2); ctx.lineTo(width, height / 2);
-    ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height);
-    ctx.stroke();
-
-    ctx.strokeStyle = '#EAB308';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    
+    ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height); ctx.stroke();
+    ctx.strokeStyle = '#EAB308'; ctx.lineWidth = 2; ctx.beginPath();
     for (let px = 0; px < width; px++) {
       const x = (px - width / 2) / 20;
       try {
@@ -204,7 +202,8 @@ export default function App() {
         if (graphEq.includes('sin')) y = Math.sin(x);
         else if (graphEq.includes('cos')) y = Math.cos(x);
         else if (graphEq.includes('tan')) y = Math.tan(x);
-        else y = eval(graphEq.replace(/x/g, `(${x})`)); 
+        // تم استبدال eval بـ new Function لتفادي تحذيرات البناء
+        else y = new Function('return ' + graphEq.replace(/x/g, `(${x})`))();
         const py = height / 2 - y * 20;
         if (px === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
       } catch (e) {}
@@ -212,7 +211,7 @@ export default function App() {
     ctx.stroke();
   };
 
-  // --- واجهات المستخدم (UI Sections) ---
+  // --- Render Pages ---
 
   const renderHome = () => (
     <div className="animate-fade-in pb-20">
@@ -226,6 +225,12 @@ export default function App() {
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-2 font-kufi">{t('universityName')}</h1>
           <p className="text-xl opacity-90">{t('partnership')}</p>
+          
+          <div className="mt-8">
+            <Button onClick={() => setPage('iumHome')} variant="gold" className="mx-auto text-xl px-8 py-4 shadow-xl border-2 border-white/20">
+              <GraduationCap size={24} /> {t('iumHome')}
+            </Button>
+          </div>
         </div>
       </div>
       <div className="container mx-auto px-4 mt-8 space-y-6">
@@ -235,14 +240,14 @@ export default function App() {
         <div className="grid md:grid-cols-2 gap-6">
           <Card title={t('coursesTitle')} theme="uni" className="bg-blue-50 border-blue-200">
              <ul className="list-disc list-inside space-y-2 text-gray-800">
-               {t('courses').split('،').map((c, i) => <li key={i}>{c}</li>)}
-               {lang === 'en' && t('courses').split(',').map((c, i) => <li key={i+10}>{c}</li>)}
+               {t('courses').split('،').map((c: string, i: number) => <li key={i}>{c}</li>)}
+               {lang === 'en' && t('courses').split(',').map((c: string, i: number) => <li key={i+10}>{c}</li>)}
              </ul>
           </Card>
           <Card title={t('majorsTitle')} theme="uni" className="bg-cyan-50 border-cyan-200">
              <ul className="list-disc list-inside space-y-2 text-gray-800">
-               {t('majors').split('،').map((c, i) => <li key={i}>{c}</li>)}
-               {lang === 'en' && t('majors').split(',').map((c, i) => <li key={i+10}>{c}</li>)}
+               {t('majors').split('،').map((c: string, i: number) => <li key={i}>{c}</li>)}
+               {lang === 'en' && t('majors').split(',').map((c: string, i: number) => <li key={i+10}>{c}</li>)}
              </ul>
           </Card>
         </div>
@@ -256,7 +261,163 @@ export default function App() {
     </div>
   );
 
-  const renderToolsLayout = (children, title) => (
+  // --- NEW PAGE: IUM HOME ---
+  const renderIUMHome = () => (
+    <div className="min-h-screen bg-gray-50 pb-12">
+      {/* Header */}
+      <div className="bg-blue-800 text-white p-6 shadow-lg sticky top-0 z-50 flex justify-between items-center">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <GraduationCap /> IUM Home
+        </h2>
+        <Button variant="outline" className="text-white border-white hover:bg-white/10" onClick={() => setPage('home')}>
+          {lang === 'ar' ? 'الرئيسية' : 'Back'}
+        </Button>
+      </div>
+
+      <div className="container mx-auto p-4 space-y-8 mt-4 animate-fade-in">
+        
+        {/* Student Form */}
+        <Card title={t('studentForm')} theme="uni" className="border-t-4 border-blue-600">
+          <form className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">{lang === 'ar' ? 'اسم الطالب' : 'Student Name'}</label>
+                <input type="text" className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">{lang === 'ar' ? 'رقم الموبايل' : 'Mobile'}</label>
+                <input type="tel" className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">{lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
+                <input type="email" className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">{lang === 'ar' ? 'تاريخ الميلاد' : 'Date of Birth'}</label>
+                <input type="date" className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">{lang === 'ar' ? 'التخصص' : 'Major'}:</label>
+              <div className="space-y-2">
+                {['الذكاء الاصطناعي', 'علوم الحاسوب', 'الأمن السيبراني', 'أمن المعلومات'].map((m) => (
+                  <label key={m} className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="major" className="w-4 h-4 text-blue-600" />
+                    <span>{m}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-2">{lang === 'ar' ? 'الجنس' : 'Gender'}:</label>
+               <select className="w-full p-2 border rounded">
+                 <option>{lang === 'ar' ? 'ذكر' : 'Male'}</option>
+                 <option>{lang === 'ar' ? 'أنثى' : 'Female'}</option>
+               </select>
+            </div>
+
+            <div className="pt-4">
+               <Button className="w-full">{lang === 'ar' ? 'تسجيل' : 'Register'}</Button>
+            </div>
+          </form>
+        </Card>
+
+        {/* Schedule */}
+        <Card title={t('uniSchedule')} theme="uni" className="border-t-4 border-blue-600">
+          <div className="overflow-x-auto">
+            <table className="w-full text-center border-collapse">
+              <thead className="bg-blue-100 text-blue-800">
+                <tr>
+                  <th className="p-3 border">{lang === 'ar' ? 'اليوم' : 'Day'}</th>
+                  <th className="p-3 border">{lang === 'ar' ? 'الوقت' : 'Time'}</th>
+                  <th className="p-3 border">{lang === 'ar' ? 'الحضور' : 'Attendance'}</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-700">
+                {[
+                  {d: 'الأحد', t: '5:00 - 9:00'},
+                  {d: 'الإثنين', t: '5:00 - 9:00'},
+                  {d: 'الثلاثاء', t: '5:00 - 9:00'},
+                  {d: 'الأربعاء', t: '5:00 - 9:00'},
+                  {d: 'الخميس', t: '3:00 - 9:00'},
+                ].map((row, i) => (
+                  <tr key={i} className="border-b hover:bg-gray-50">
+                    <td className="p-3 border font-bold">{row.d}</td>
+                    <td className="p-3 border font-mono" dir="ltr">{row.t}</td>
+                    <td className="p-3 border">
+                      <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center mx-auto shadow-sm">
+                         <Video size={16} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {/* Contact & Platforms */}
+        <div className="grid md:grid-cols-2 gap-6">
+           {/* Supervisors */}
+           <Card title="مشرفين المادة" theme="uni" className="bg-white border-blue-200">
+              <div className="space-y-6">
+                 <div className="flex items-start gap-4 p-4 bg-green-50 rounded-xl border border-green-100">
+                    <div className="bg-green-500 text-white p-3 rounded-full">
+                       <User size={24} />
+                    </div>
+                    <div>
+                       <h4 className="font-bold text-lg text-gray-800">البروفيسور جراح محمد الجراح</h4>
+                       <a href="https://wa.me/962778989770" target="_blank" className="flex items-center gap-2 text-green-600 mt-2 hover:underline font-mono" dir="ltr">
+                          <Phone size={16} /> +962 7 7898 9770
+                       </a>
+                    </div>
+                 </div>
+
+                 <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="bg-blue-500 text-white p-3 rounded-full">
+                       <BookOpen size={24} />
+                    </div>
+                    <div>
+                       <h4 className="font-bold text-lg text-gray-800">الدكتور أحمد المرعي</h4>
+                       <p className="text-sm text-gray-500 mb-1">مشرف مادة تعلم ال HTML</p>
+                       <a href="mailto:atm.atm1994@gmail.com" className="flex items-center gap-2 text-blue-600 hover:underline font-mono">
+                          <Mail size={16} /> atm.atm1994@gmail.com
+                       </a>
+                    </div>
+                 </div>
+              </div>
+           </Card>
+
+           {/* Platforms Links */}
+           <Card title="منصات تواصل الجامعة" theme="uni" className="bg-indigo-50 border-indigo-200">
+              <div className="flex flex-col gap-4 justify-center h-full">
+                 <a href="https://t.me/c/2354962573/1" target="_blank" className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-indigo-100 hover:shadow-md transition-all text-blue-500 font-bold">
+                    <span className="flex items-center gap-3"><Send size={20} /> Telegram</span>
+                    <ChevronLeft />
+                 </a>
+                 <a href="https://www.microsoft.com/ar/microsoft-teams/log-in" target="_blank" className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-indigo-100 hover:shadow-md transition-all text-purple-600 font-bold">
+                    <span className="flex items-center gap-3"><Video size={20} /> Microsoft Teams</span>
+                    <ChevronLeft />
+                 </a>
+                 <a href="https://zoom.us/signin" target="_blank" className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-indigo-100 hover:shadow-md transition-all text-blue-700 font-bold">
+                    <span className="flex items-center gap-3"><Video size={20} /> Zoom</span>
+                    <ChevronLeft />
+                 </a>
+              </div>
+           </Card>
+        </div>
+        
+        <div className="text-center mt-12 mb-8 opacity-50 font-mono font-bold text-xl tracking-widest">
+           N9 <span className="text-blue-600">×</span> IUM
+        </div>
+
+      </div>
+    </div>
+  );
+
+  const renderToolsLayout = (children: React.ReactNode, title: string) => (
     <div className="min-h-screen bg-zinc-950 text-yellow-50 pb-12">
       <div className="bg-zinc-900 p-6 shadow-2xl border-b border-yellow-600/30 flex justify-between items-center sticky top-0 z-50">
         <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center gap-2">
@@ -273,54 +434,34 @@ export default function App() {
     </div>
   );
 
-  const renderFileTool = (endpoint, title, icon, accept) => {
+  const renderFileTool = (endpoint: string, title: string, icon: any, accept: string) => {
     const Icon = icon;
     return renderToolsLayout(
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8">
         <div className={`w-32 h-32 rounded-full bg-zinc-800 border-2 border-dashed ${isProcessing ? 'border-blue-500 animate-spin-slow' : 'border-yellow-600'} flex items-center justify-center transition-all`}>
           {isProcessing ? <Loader2 size={64} className="text-blue-500 animate-spin" /> : <Icon size={64} className="text-yellow-500" />}
         </div>
-        
         <div className="text-center space-y-4 w-full max-w-md">
           <h3 className="text-3xl font-light">{title}</h3>
-          
           {!downloadUrl && !isProcessing && (
             <>
               <p className="text-gray-400">{t('upload')}</p>
               <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-yellow-500 px-8 py-4 rounded-xl border border-yellow-600 transition-all flex items-center justify-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
-                <Upload />
-                <span>{selectedFiles ? `${t('selectFiles')} ${selectedFiles.length}` : (lang === 'ar' ? 'اختيار الملفات' : 'Select Files')}</span>
-                <input 
-                  type="file" 
-                  multiple 
-                  accept={accept} 
-                  className="hidden" 
-                  onChange={(e) => setSelectedFiles(e.target.files)} 
-                />
+                <Upload /> <span>{selectedFiles ? `${t('selectFiles')} ${selectedFiles.length}` : (lang === 'ar' ? 'اختيار الملفات' : 'Select Files')}</span>
+                <input type="file" multiple accept={accept} className="hidden" onChange={(e) => setSelectedFiles(e.target.files)} />
               </label>
-              {selectedFiles && (
-                <Button variant="gold" className="w-full text-lg font-bold" onClick={() => handleFileProcess(endpoint)}>
-                  {t('process')}
-                </Button>
-              )}
+              {selectedFiles && <Button variant="gold" className="w-full text-lg font-bold" onClick={() => handleFileProcess(endpoint)}>{t('process')}</Button>}
             </>
           )}
-
           {isProcessing && <p className="text-xl text-blue-400 animate-pulse">{t('processing')}</p>}
-
           {statusMsg === 'error' && <p className="text-red-500 font-bold">{t('error')}</p>}
-
           {downloadUrl && (
             <div className="animate-fade-in space-y-4">
               <p className="text-green-400 font-bold text-xl">{t('success')}</p>
               <a href={downloadUrl} download="N9-Result" className="block w-full">
-                <Button variant="gold" className="w-full bg-green-600 border-green-500 hover:bg-green-500 text-white">
-                  <Download /> {t('download')}
-                </Button>
+                <Button variant="gold" className="w-full bg-green-600 border-green-500 hover:bg-green-500 text-white"><Download /> {t('download')}</Button>
               </a>
-              <button onClick={() => { setDownloadUrl(null); setSelectedFiles(null); }} className="text-gray-500 underline text-sm mt-4">
-                {lang === 'ar' ? 'معالجة ملف آخر' : 'Process another file'}
-              </button>
+              <button onClick={() => { setDownloadUrl(null); setSelectedFiles(null); }} className="text-gray-500 underline text-sm mt-4">{lang === 'ar' ? 'معالجة ملف آخر' : 'Process another file'}</button>
             </div>
           )}
         </div>
@@ -348,22 +489,14 @@ export default function App() {
       <div className="overflow-x-auto rounded-xl border border-zinc-700">
         <table className="w-full text-right bg-zinc-900">
           <thead className="bg-zinc-800 text-yellow-500">
-            <tr>
-              <th className="p-3">{t('subjectName')}</th>
-              <th className="p-3">{t('teacherName')}</th>
-              <th className="p-3">{t('time')}</th>
-              <th className="p-3">{t('grades')} (100)</th>
-              <th className="p-3"></th>
-            </tr>
+            <tr><th className="p-3">{t('subjectName')}</th><th className="p-3">{t('teacherName')}</th><th className="p-3">{t('time')}</th><th className="p-3">{t('grades')} (100)</th><th className="p-3"></th></tr>
           </thead>
           <tbody>
             {subjects.map((s) => {
               const total = s.participation + s.attendance + s.homework + s.midterm + s.final;
               return (
                 <tr key={s.id} className="border-t border-zinc-800 hover:bg-zinc-800/50 text-white">
-                  <td className="p-3 font-bold">{s.name}</td>
-                  <td className="p-3 text-gray-400">{s.teacher}</td>
-                  <td className="p-3 font-mono text-yellow-200">{s.time}</td>
+                  <td className="p-3 font-bold">{s.name}</td><td className="p-3 text-gray-400">{s.teacher}</td><td className="p-3 font-mono text-yellow-200">{s.time}</td>
                   <td className="p-3 font-bold"><span className={`${total >= 50 ? 'text-green-400' : 'text-red-400'}`}>{total}</span></td>
                   <td className="p-3 text-left"><button onClick={() => setSubjects(subjects.filter(sub => sub.id !== s.id))} className="text-red-500 hover:text-red-400"><Trash2 size={18} /></button></td>
                 </tr>
@@ -380,26 +513,10 @@ export default function App() {
     return renderToolsLayout(
       <div className="max-w-md mx-auto">
         <div className="bg-black p-6 rounded-3xl border-2 border-yellow-600/50 shadow-[0_0_30px_rgba(234,179,8,0.1)]">
-          <div className="bg-zinc-900 h-24 rounded-xl mb-6 flex items-end justify-end p-4 text-4xl font-mono text-yellow-400 overflow-x-auto">
-            {calcInput || '0'}
-          </div>
+          <div className="bg-zinc-900 h-24 rounded-xl mb-6 flex items-end justify-end p-4 text-4xl font-mono text-yellow-400 overflow-x-auto">{calcInput || '0'}</div>
           <div className="grid grid-cols-4 gap-4">
-            {btns.map(b => (
-              <button 
-                key={b} 
-                onClick={() => {
-                   if (b === 'C') setCalcInput('');
-                   else if (b === '=') { try { setCalcInput(eval(calcInput).toString()); } catch { setCalcInput('Error'); } }
-                   else setCalcInput(prev => prev + b);
-                }}
-                className={`p-4 rounded-xl text-xl font-bold transition-all ${b === '=' ? 'bg-yellow-600 text-black col-span-2' : b === 'C' ? 'bg-red-900 text-red-200' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}
-              >
-                {b}
-              </button>
-            ))}
-            {['sin','cos','tan','sqrt','log','(',')','^'].map(fn => (
-               <button key={fn} onClick={() => setCalcInput(prev => prev + (fn === '^' ? '**' : fn === 'sqrt' ? 'Math.sqrt(' : `Math.${fn}(`))} className="p-3 bg-zinc-900 text-yellow-600 text-sm font-bold rounded-lg hover:bg-zinc-800">{fn}</button>
-            ))}
+            {btns.map(b => <button key={b} onClick={() => { if (b === 'C') setCalcInput(''); else if (b === '=') { try { setCalcInput(String(new Function('return ' + calcInput)())); } catch { setCalcInput('Error'); } } else setCalcInput(prev => prev + b); }} className={`p-4 rounded-xl text-xl font-bold transition-all ${b === '=' ? 'bg-yellow-600 text-black col-span-2' : b === 'C' ? 'bg-red-900 text-red-200' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}>{b}</button>)}
+            {['sin','cos','tan','sqrt','log','(',')','^'].map(fn => <button key={fn} onClick={() => setCalcInput(prev => prev + (fn === '^' ? '**' : fn === 'sqrt' ? 'Math.sqrt(' : `Math.${fn}(`))} className="p-3 bg-zinc-900 text-yellow-600 text-sm font-bold rounded-lg hover:bg-zinc-800">{fn}</button>)}
           </div>
         </div>
       </div>, t('tool_calc')
@@ -409,11 +526,7 @@ export default function App() {
   const renderGraph = () => renderToolsLayout(
       <div className="flex flex-col items-center gap-6">
         <div className="w-full max-w-2xl bg-zinc-900 p-4 rounded-xl border border-zinc-700">
-           <div className="flex gap-2 mb-4">
-             <span className="text-yellow-500 font-bold p-2">y = </span>
-             <input value={graphEq} onChange={(e) => setGraphEq(e.target.value)} className="flex-1 bg-black text-white p-2 rounded border border-zinc-700 focus:border-yellow-500 outline-none font-mono" placeholder="Example: x * x" />
-             <Button variant="gold" onClick={drawGraph}>{lang === 'ar' ? 'ارسم' : 'Draw'}</Button>
-           </div>
+           <div className="flex gap-2 mb-4"><span className="text-yellow-500 font-bold p-2">y = </span><input value={graphEq} onChange={(e) => setGraphEq(e.target.value)} className="flex-1 bg-black text-white p-2 rounded border border-zinc-700 focus:border-yellow-500 outline-none font-mono" placeholder="Example: x * x" /><Button variant="gold" onClick={drawGraph}>{lang === 'ar' ? 'ارسم' : 'Draw'}</Button></div>
            <canvas ref={canvasRef} width={600} height={400} className="w-full bg-black rounded border border-zinc-800 cursor-crosshair"></canvas>
         </div>
       </div>, t('tool_graph')
@@ -421,22 +534,22 @@ export default function App() {
 
   const equations = {
     physics: [
-      { id: 'newton2', name: 'Newton\'s 2nd Law (F=ma)', inputs: ['m (kg)', 'a (m/s²)'], func: (v) => v[0] * v[1] },
-      { id: 'velocity', name: 'Velocity (v=d/t)', inputs: ['d (m)', 't (s)'], func: (v) => v[0] / v[1] },
-      { id: 'ke', name: 'Kinetic Energy (K=0.5mv²)', inputs: ['m (kg)', 'v (m/s)'], func: (v) => 0.5 * v[0] * v[1] * v[1] },
-      { id: 'ohm', name: 'Ohm\'s Law (V=IR)', inputs: ['I (A)', 'R (Ω)'], func: (v) => v[0] * v[1] },
-      { id: 'power', name: 'Power (P=W/t)', inputs: ['W (J)', 't (s)'], func: (v) => v[0] / v[1] },
+      { id: 'newton2', name: 'Newton\'s 2nd Law (F=ma)', inputs: ['m (kg)', 'a (m/s²)'], func: (v: number[]) => v[0] * v[1] },
+      { id: 'velocity', name: 'Velocity (v=d/t)', inputs: ['d (m)', 't (s)'], func: (v: number[]) => v[0] / v[1] },
+      { id: 'ke', name: 'Kinetic Energy (K=0.5mv²)', inputs: ['m (kg)', 'v (m/s)'], func: (v: number[]) => 0.5 * v[0] * v[1] * v[1] },
+      { id: 'ohm', name: 'Ohm\'s Law (V=IR)', inputs: ['I (A)', 'R (Ω)'], func: (v: number[]) => v[0] * v[1] },
+      { id: 'power', name: 'Power (P=W/t)', inputs: ['W (J)', 't (s)'], func: (v: number[]) => v[0] / v[1] },
     ],
     chemistry: [
-      { id: 'density', name: 'Density (D=m/v)', inputs: ['m (g)', 'v (mL)'], func: (v) => v[0] / v[1] },
-      { id: 'moles', name: 'Moles (n=m/M)', inputs: ['mass (g)', 'Molar Mass (g/mol)'], func: (v) => v[0] / v[1] },
-      { id: 'molarity', name: 'Molarity (M=n/V)', inputs: ['moles (n)', 'Volume (L)'], func: (v) => v[0] / v[1] },
-      { id: 'ideal_gas', name: 'Ideal Gas (P=nRT/V)', inputs: ['n (mol)', 'T (K)', 'V (L)'], func: (v) => (v[0] * 0.0821 * v[1]) / v[2] },
-      { id: 'ph', name: 'pH Calculation (-log[H+])', inputs: ['[H+]'], func: (v) => -Math.log10(v[0]) },
+      { id: 'density', name: 'Density (D=m/v)', inputs: ['m (g)', 'v (mL)'], func: (v: number[]) => v[0] / v[1] },
+      { id: 'moles', name: 'Moles (n=m/M)', inputs: ['mass (g)', 'Molar Mass (g/mol)'], func: (v: number[]) => v[0] / v[1] },
+      { id: 'molarity', name: 'Molarity (M=n/V)', inputs: ['moles (n)', 'Volume (L)'], func: (v: number[]) => v[0] / v[1] },
+      { id: 'ideal_gas', name: 'Ideal Gas (P=nRT/V)', inputs: ['n (mol)', 'T (K)', 'V (L)'], func: (v: number[]) => (v[0] * 0.0821 * v[1]) / v[2] },
+      { id: 'ph', name: 'pH Calculation (-log[H+])', inputs: ['[H+]'], func: (v: number[]) => -Math.log10(v[0]) },
     ]
   };
 
-  const renderSolver = (type) => {
+  const renderSolver = (type: 'physics' | 'chemistry') => {
     const list = equations[type];
     const selectedId = type === 'physics' ? selectedPhyEq : selectedChemEq;
     const currentEq = list.find(e => e.id === selectedId);
@@ -445,11 +558,7 @@ export default function App() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2 h-96 overflow-y-auto pr-2 custom-scrollbar">
             {list.map((eq, i) => (
-              <button
-                key={eq.id}
-                onClick={() => { type === 'physics' ? setSelectedPhyEq(eq.id) : setSelectedChemEq(eq.id); setEqResult(null); setEqInputs({}); }}
-                className={`w-full text-left p-4 rounded-lg border transition-all ${selectedId === eq.id ? 'bg-yellow-600 text-black border-yellow-400 font-bold' : 'bg-zinc-800 border-zinc-700 hover:border-yellow-600 text-gray-300'}`}
-              >
+              <button key={eq.id} onClick={() => { type === 'physics' ? setSelectedPhyEq(eq.id) : setSelectedChemEq(eq.id); setEqResult(null); setEqInputs({}); }} className={`w-full text-left p-4 rounded-lg border transition-all ${selectedId === eq.id ? 'bg-yellow-600 text-black border-yellow-400 font-bold' : 'bg-zinc-800 border-zinc-700 hover:border-yellow-600 text-gray-300'}`}>
                 {i + 1}. {eq.name}
               </button>
             ))}
@@ -458,21 +567,9 @@ export default function App() {
              {currentEq ? (
                <div className="space-y-6 animate-fade-in">
                  <h3 className="text-xl font-bold text-yellow-500">{currentEq.name}</h3>
-                 <div className="space-y-4">
-                   {currentEq.inputs.map(input => (
-                     <div key={input}>
-                       <label className="text-sm text-gray-400 block mb-1">{input}</label>
-                       <input type="number" onChange={(e) => setEqInputs({...eqInputs, [input]: parseFloat(e.target.value)})} className="w-full bg-black border border-zinc-600 p-3 rounded text-white focus:border-yellow-500 outline-none" />
-                     </div>
-                   ))}
-                 </div>
+                 <div className="space-y-4">{currentEq.inputs.map(input => <div key={input}><label className="text-sm text-gray-400 block mb-1">{input}</label><input type="number" onChange={(e) => setEqInputs({...eqInputs, [input]: parseFloat(e.target.value)})} className="w-full bg-black border border-zinc-600 p-3 rounded text-white focus:border-yellow-500 outline-none" /></div>)}</div>
                  <Button variant="gold" className="w-full" onClick={() => currentEq && setEqResult(currentEq.func(currentEq.inputs.map(l => eqInputs[l] || 0)))}>{t('solve')}</Button>
-                 {eqResult !== null && (
-                   <div className="mt-4 p-4 bg-green-900/30 border border-green-500 rounded text-center">
-                     <span className="text-gray-300">{t('calcResult')}: </span>
-                     <span className="text-2xl font-bold text-green-400">{eqResult.toFixed(4)}</span>
-                   </div>
-                 )}
+                 {eqResult !== null && <div className="mt-4 p-4 bg-green-900/30 border border-green-500 rounded text-center"><span className="text-gray-300">{t('calcResult')}: </span><span className="text-2xl font-bold text-green-400">{eqResult.toFixed(4)}</span></div>}
                </div>
              ) : <div className="text-center text-gray-500">{lang === 'ar' ? 'اختر معادلة من القائمة' : 'Select an equation from list'}</div>}
           </div>
@@ -490,13 +587,9 @@ export default function App() {
       <div className="space-y-4">
         <h2 className="text-4xl font-bold text-white font-kufi">{t('founder')}</h2>
         <p className="text-xl text-yellow-500">{t('brandOwner')}</p>
-        <div className="flex items-center justify-center gap-2 text-gray-400 hover:text-white transition-colors cursor-pointer">
-           <User size={20} /><span>{t('insta')}</span>
-        </div>
+        <div className="flex items-center justify-center gap-2 text-gray-400 hover:text-white transition-colors cursor-pointer"><User size={20} /><span>{t('insta')}</span></div>
       </div>
-      <div className="border-t border-zinc-800 pt-8 mt-8">
-        <p className="text-gray-500 text-sm leading-relaxed max-w-lg mx-auto">{t('partnership')}</p>
-      </div>
+      <div className="border-t border-zinc-800 pt-8 mt-8"><p className="text-gray-500 text-sm leading-relaxed max-w-lg mx-auto">{t('partnership')}</p></div>
     </div>, t('contact')
   );
 
@@ -515,14 +608,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 font-sans ${lang === 'ar' ? 'font-kufi' : ''}`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;500;700&display=swap');
-        .font-kufi { font-family: 'Noto Kufi Arabic', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        .animate-fade-in { animation: fade-in 0.5s ease-out; }
-      `}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;500;700&display=swap'); .font-kufi { font-family: 'Noto Kufi Arabic', sans-serif; } .custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; } @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } .animate-fade-in { animation: fade-in 0.5s ease-out; }`}</style>
 
       {page === 'home' && (
         <nav className="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
@@ -531,12 +617,8 @@ export default function App() {
              <span className="font-bold text-gray-800 hidden md:block">{t('universityName')}</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setLang(prev => prev === 'ar' ? 'en' : 'ar')} className="flex items-center gap-2 px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">
-              <Globe size={16} /> {lang === 'en' ? 'Arabic' : 'English'}
-            </button>
-            <button onClick={() => setIsMenuOpen(true)} className="bg-black text-yellow-500 px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-gray-900 transition-all shadow-lg border border-yellow-600/50">
-              <span>N9</span><Menu size={20} />
-            </button>
+            <button onClick={() => setLang(prev => prev === 'ar' ? 'en' : 'ar')} className="flex items-center gap-2 px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"><Globe size={16} /> {lang === 'en' ? 'Arabic' : 'English'}</button>
+            <button onClick={() => setIsMenuOpen(true)} className="bg-black text-yellow-500 px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-gray-900 transition-all shadow-lg border border-yellow-600/50"><span>N9</span><Menu size={20} /></button>
           </div>
         </nav>
       )}
@@ -551,7 +633,7 @@ export default function App() {
             </div>
             <div className="space-y-2">
               {toolsList.map((tool) => (
-                <button key={tool.id} onClick={() => { setPage(tool.id); setIsMenuOpen(false); setSelectedFiles(null); setDownloadUrl(null); }} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-zinc-800 text-gray-300 hover:text-yellow-400 transition-all group">
+                <button key={tool.id} onClick={() => { setPage(tool.id as Page); setIsMenuOpen(false); setSelectedFiles(null); setDownloadUrl(null); }} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-zinc-800 text-gray-300 hover:text-yellow-400 transition-all group">
                   <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-black border border-zinc-800 group-hover:border-yellow-600/50"><tool.icon size={20} /></div>
                   <span className="font-medium">{tool.label}</span>
                   {lang === 'ar' ? <ChevronLeft className="mr-auto opacity-0 group-hover:opacity-100" size={16}/> : <ChevronRight className="ml-auto opacity-0 group-hover:opacity-100" size={16}/>}
@@ -564,6 +646,7 @@ export default function App() {
 
       <main>
         {page === 'home' && renderHome()}
+        {page === 'iumHome' && renderIUMHome()}
         {page === 'img2pdf' && renderFileTool('img-to-pdf', t('tool_img2pdf'), FileText, 'image/*')}
         {page === 'zip' && renderFileTool('create-zip', t('tool_zip'), Archive, '*/*')}
         {page === 'mergePdf' && renderFileTool('merge-pdf', t('tool_merge'), Combine, '.pdf')}
