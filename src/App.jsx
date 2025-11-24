@@ -4,39 +4,15 @@ import {
   Trash2, Calculator, Activity, Atom, FlaskConical, 
   Settings, User, ChevronRight, ChevronLeft, Globe, 
   LayoutGrid, Scissors, Combine, BookOpen, Loader2,
-  Phone, Mail, Video, Send, CalendarDays, GraduationCap, MapPin
+  Phone, Mail, Video, Send, GraduationCap
 } from 'lucide-react';
 
 // --- رابط السيرفر الخاص بك ---
 const API_BASE_URL = "https://n9xium.onrender.com/api";
 
-// --- Types & Interfaces ---
-
-type Lang = 'ar' | 'en';
-type Page = 
-  | 'home' | 'iumHome' | 'img2pdf' | 'zip' | 'schedule' 
-  | 'mergePdf' | 'splitPdf' | 'calculator' 
-  | 'graph' | 'physics' | 'chemistry' | 'contact';
-
-interface Translation {
-  [key: string]: { ar: string; en: string };
-}
-
-interface Subject {
-  id: number;
-  name: string;
-  teacher: string;
-  time: string;
-  participation: number;
-  attendance: number;
-  homework: number;
-  midterm: number;
-  final: number;
-}
-
 // --- Content & Translations ---
 
-const translations: Translation = {
+const translations = {
   home: { ar: 'الرئيسية', en: 'Home' },
   iumHome: { ar: 'بوابة الطالب (IUM Home)', en: 'Student Portal (IUM Home)' },
   tools: { ar: 'أدوات N9', en: 'N9 Tools' },
@@ -82,9 +58,9 @@ const translations: Translation = {
 
 // --- Helper Components ---
 
-const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }: any) => {
+const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
   const baseStyle = "px-6 py-2 rounded-lg font-bold transition-all duration-300 transform shadow-md flex items-center justify-center gap-2";
-  const variants: any = {
+  const variants = {
     primary: "bg-blue-600 hover:bg-blue-700 text-white border border-blue-500",
     gold: "bg-gradient-to-r from-yellow-600 to-yellow-400 hover:from-yellow-500 hover:to-yellow-300 text-black border border-yellow-300",
     outline: "bg-transparent border-2 border-current",
@@ -101,7 +77,7 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
   );
 };
 
-const Card = ({ children, title, theme, className = '' }: any) => {
+const Card = ({ children, title, theme, className = '' }) => {
   const isGold = theme === 'n9';
   return (
     <div className={`p-6 rounded-2xl shadow-xl ${isGold ? 'bg-zinc-900 border border-yellow-600/30 text-yellow-50' : 'bg-white border border-blue-100 text-gray-800'} ${className}`}>
@@ -114,36 +90,36 @@ const Card = ({ children, title, theme, className = '' }: any) => {
 // --- Main Application Component ---
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>('ar');
-  const [page, setPage] = useState<Page>('home');
+  const [lang, setLang] = useState('ar');
+  const [page, setPage] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   // File Tools State
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-  const [statusMsg, setStatusMsg] = useState<string>('');
+  const [downloadUrl, setDownloadUrl] = useState(null);
+  const [statusMsg, setStatusMsg] = useState('');
 
   // Schedule State
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjects, setSubjects] = useState([]);
   
   // Calculator State
   const [calcInput, setCalcInput] = useState('');
   
   // Graph State
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef(null);
   const [graphEq, setGraphEq] = useState('x * x');
 
   // Equation Solvers State
-  const [selectedPhyEq, setSelectedPhyEq] = useState<string>('');
-  const [selectedChemEq, setSelectedChemEq] = useState<string>('');
-  const [eqInputs, setEqInputs] = useState<{[key:string]: number}>({});
-  const [eqResult, setEqResult] = useState<number | null>(null);
+  const [selectedPhyEq, setSelectedPhyEq] = useState('');
+  const [selectedChemEq, setSelectedChemEq] = useState('');
+  const [eqInputs, setEqInputs] = useState({});
+  const [eqResult, setEqResult] = useState(null);
 
-  const t = (key: string) => translations[key] ? translations[key][lang] : key;
+  const t = (key) => translations[key] ? translations[key][lang] : key;
 
   // --- API Integration ---
-  const handleFileProcess = async (endpoint: string) => {
+  const handleFileProcess = async (endpoint) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
     setIsProcessing(true); setStatusMsg(''); setDownloadUrl(null);
     const formData = new FormData();
@@ -164,16 +140,16 @@ export default function App() {
   };
 
   // --- Helper Logic ---
-  const handleAddSubject = (e: React.FormEvent) => {
+  const handleAddSubject = (e) => {
     e.preventDefault();
     if (subjects.length >= 10) return alert(lang === 'ar' ? 'الحد الأقصى 10 مواد' : 'Max 10 subjects');
-    const form = e.target as HTMLFormElement;
+    const form = e.target;
     const formData = new FormData(form);
-    const newSubject: Subject = {
+    const newSubject = {
       id: Date.now(),
-      name: formData.get('name') as string,
-      teacher: formData.get('teacher') as string,
-      time: formData.get('time') as string,
+      name: formData.get('name'),
+      teacher: formData.get('teacher'),
+      time: formData.get('time'),
       participation: Number(formData.get('participation')),
       attendance: Number(formData.get('attendance')),
       homework: Number(formData.get('homework')),
@@ -202,8 +178,7 @@ export default function App() {
         if (graphEq.includes('sin')) y = Math.sin(x);
         else if (graphEq.includes('cos')) y = Math.cos(x);
         else if (graphEq.includes('tan')) y = Math.tan(x);
-        // تم استبدال eval بـ new Function لتفادي تحذيرات البناء
-        else y = new Function('return ' + graphEq.replace(/x/g, `(${x})`))();
+        else y = eval(graphEq.replace(/x/g, `(${x})`)); 
         const py = height / 2 - y * 20;
         if (px === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
       } catch (e) {}
@@ -240,14 +215,14 @@ export default function App() {
         <div className="grid md:grid-cols-2 gap-6">
           <Card title={t('coursesTitle')} theme="uni" className="bg-blue-50 border-blue-200">
              <ul className="list-disc list-inside space-y-2 text-gray-800">
-               {t('courses').split('،').map((c: string, i: number) => <li key={i}>{c}</li>)}
-               {lang === 'en' && t('courses').split(',').map((c: string, i: number) => <li key={i+10}>{c}</li>)}
+               {t('courses').split('،').map((c, i) => <li key={i}>{c}</li>)}
+               {lang === 'en' && t('courses').split(',').map((c, i) => <li key={i+10}>{c}</li>)}
              </ul>
           </Card>
           <Card title={t('majorsTitle')} theme="uni" className="bg-cyan-50 border-cyan-200">
              <ul className="list-disc list-inside space-y-2 text-gray-800">
-               {t('majors').split('،').map((c: string, i: number) => <li key={i}>{c}</li>)}
-               {lang === 'en' && t('majors').split(',').map((c: string, i: number) => <li key={i+10}>{c}</li>)}
+               {t('majors').split('،').map((c, i) => <li key={i}>{c}</li>)}
+               {lang === 'en' && t('majors').split(',').map((c, i) => <li key={i+10}>{c}</li>)}
              </ul>
           </Card>
         </div>
@@ -417,7 +392,7 @@ export default function App() {
     </div>
   );
 
-  const renderToolsLayout = (children: React.ReactNode, title: string) => (
+  const renderToolsLayout = (children, title) => (
     <div className="min-h-screen bg-zinc-950 text-yellow-50 pb-12">
       <div className="bg-zinc-900 p-6 shadow-2xl border-b border-yellow-600/30 flex justify-between items-center sticky top-0 z-50">
         <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center gap-2">
@@ -434,7 +409,7 @@ export default function App() {
     </div>
   );
 
-  const renderFileTool = (endpoint: string, title: string, icon: any, accept: string) => {
+  const renderFileTool = (endpoint, title, icon, accept) => {
     const Icon = icon;
     return renderToolsLayout(
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-8">
@@ -515,7 +490,7 @@ export default function App() {
         <div className="bg-black p-6 rounded-3xl border-2 border-yellow-600/50 shadow-[0_0_30px_rgba(234,179,8,0.1)]">
           <div className="bg-zinc-900 h-24 rounded-xl mb-6 flex items-end justify-end p-4 text-4xl font-mono text-yellow-400 overflow-x-auto">{calcInput || '0'}</div>
           <div className="grid grid-cols-4 gap-4">
-            {btns.map(b => <button key={b} onClick={() => { if (b === 'C') setCalcInput(''); else if (b === '=') { try { setCalcInput(String(new Function('return ' + calcInput)())); } catch { setCalcInput('Error'); } } else setCalcInput(prev => prev + b); }} className={`p-4 rounded-xl text-xl font-bold transition-all ${b === '=' ? 'bg-yellow-600 text-black col-span-2' : b === 'C' ? 'bg-red-900 text-red-200' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}>{b}</button>)}
+            {btns.map(b => <button key={b} onClick={() => { if (b === 'C') setCalcInput(''); else if (b === '=') { try { setCalcInput(eval(calcInput).toString()); } catch { setCalcInput('Error'); } } else setCalcInput(prev => prev + b); }} className={`p-4 rounded-xl text-xl font-bold transition-all ${b === '=' ? 'bg-yellow-600 text-black col-span-2' : b === 'C' ? 'bg-red-900 text-red-200' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}>{b}</button>)}
             {['sin','cos','tan','sqrt','log','(',')','^'].map(fn => <button key={fn} onClick={() => setCalcInput(prev => prev + (fn === '^' ? '**' : fn === 'sqrt' ? 'Math.sqrt(' : `Math.${fn}(`))} className="p-3 bg-zinc-900 text-yellow-600 text-sm font-bold rounded-lg hover:bg-zinc-800">{fn}</button>)}
           </div>
         </div>
@@ -534,22 +509,22 @@ export default function App() {
 
   const equations = {
     physics: [
-      { id: 'newton2', name: 'Newton\'s 2nd Law (F=ma)', inputs: ['m (kg)', 'a (m/s²)'], func: (v: number[]) => v[0] * v[1] },
-      { id: 'velocity', name: 'Velocity (v=d/t)', inputs: ['d (m)', 't (s)'], func: (v: number[]) => v[0] / v[1] },
-      { id: 'ke', name: 'Kinetic Energy (K=0.5mv²)', inputs: ['m (kg)', 'v (m/s)'], func: (v: number[]) => 0.5 * v[0] * v[1] * v[1] },
-      { id: 'ohm', name: 'Ohm\'s Law (V=IR)', inputs: ['I (A)', 'R (Ω)'], func: (v: number[]) => v[0] * v[1] },
-      { id: 'power', name: 'Power (P=W/t)', inputs: ['W (J)', 't (s)'], func: (v: number[]) => v[0] / v[1] },
+      { id: 'newton2', name: 'Newton\'s 2nd Law (F=ma)', inputs: ['m (kg)', 'a (m/s²)'], func: (v) => v[0] * v[1] },
+      { id: 'velocity', name: 'Velocity (v=d/t)', inputs: ['d (m)', 't (s)'], func: (v) => v[0] / v[1] },
+      { id: 'ke', name: 'Kinetic Energy (K=0.5mv²)', inputs: ['m (kg)', 'v (m/s)'], func: (v) => 0.5 * v[0] * v[1] * v[1] },
+      { id: 'ohm', name: 'Ohm\'s Law (V=IR)', inputs: ['I (A)', 'R (Ω)'], func: (v) => v[0] * v[1] },
+      { id: 'power', name: 'Power (P=W/t)', inputs: ['W (J)', 't (s)'], func: (v) => v[0] / v[1] },
     ],
     chemistry: [
-      { id: 'density', name: 'Density (D=m/v)', inputs: ['m (g)', 'v (mL)'], func: (v: number[]) => v[0] / v[1] },
-      { id: 'moles', name: 'Moles (n=m/M)', inputs: ['mass (g)', 'Molar Mass (g/mol)'], func: (v: number[]) => v[0] / v[1] },
-      { id: 'molarity', name: 'Molarity (M=n/V)', inputs: ['moles (n)', 'Volume (L)'], func: (v: number[]) => v[0] / v[1] },
-      { id: 'ideal_gas', name: 'Ideal Gas (P=nRT/V)', inputs: ['n (mol)', 'T (K)', 'V (L)'], func: (v: number[]) => (v[0] * 0.0821 * v[1]) / v[2] },
-      { id: 'ph', name: 'pH Calculation (-log[H+])', inputs: ['[H+]'], func: (v: number[]) => -Math.log10(v[0]) },
+      { id: 'density', name: 'Density (D=m/v)', inputs: ['m (g)', 'v (mL)'], func: (v) => v[0] / v[1] },
+      { id: 'moles', name: 'Moles (n=m/M)', inputs: ['mass (g)', 'Molar Mass (g/mol)'], func: (v) => v[0] / v[1] },
+      { id: 'molarity', name: 'Molarity (M=n/V)', inputs: ['moles (n)', 'Volume (L)'], func: (v) => v[0] / v[1] },
+      { id: 'ideal_gas', name: 'Ideal Gas (P=nRT/V)', inputs: ['n (mol)', 'T (K)', 'V (L)'], func: (v) => (v[0] * 0.0821 * v[1]) / v[2] },
+      { id: 'ph', name: 'pH Calculation (-log[H+])', inputs: ['[H+]'], func: (v) => -Math.log10(v[0]) },
     ]
   };
 
-  const renderSolver = (type: 'physics' | 'chemistry') => {
+  const renderSolver = (type) => {
     const list = equations[type];
     const selectedId = type === 'physics' ? selectedPhyEq : selectedChemEq;
     const currentEq = list.find(e => e.id === selectedId);
@@ -633,7 +608,7 @@ export default function App() {
             </div>
             <div className="space-y-2">
               {toolsList.map((tool) => (
-                <button key={tool.id} onClick={() => { setPage(tool.id as Page); setIsMenuOpen(false); setSelectedFiles(null); setDownloadUrl(null); }} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-zinc-800 text-gray-300 hover:text-yellow-400 transition-all group">
+                <button key={tool.id} onClick={() => { setPage(tool.id); setIsMenuOpen(false); setSelectedFiles(null); setDownloadUrl(null); }} className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-zinc-800 text-gray-300 hover:text-yellow-400 transition-all group">
                   <div className="p-2 bg-zinc-900 rounded-lg group-hover:bg-black border border-zinc-800 group-hover:border-yellow-600/50"><tool.icon size={20} /></div>
                   <span className="font-medium">{tool.label}</span>
                   {lang === 'ar' ? <ChevronLeft className="mr-auto opacity-0 group-hover:opacity-100" size={16}/> : <ChevronRight className="ml-auto opacity-0 group-hover:opacity-100" size={16}/>}
