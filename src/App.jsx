@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, X, Upload, FileText, Download, Archive, 
-  Plus, Trash2, Calculator, Activity, atom, FlaskConical, 
+  Plus, Trash2, Calculator, Activity, Atom, FlaskConical, 
   Settings, User, ChevronRight, ChevronLeft, Globe, 
   LayoutGrid, Scissors, Combine, BookOpen, Loader2
 } from 'lucide-react';
@@ -508,7 +508,7 @@ export default function App() {
     { id: 'splitPdf', icon: Scissors, label: t('tool_split') },
     { id: 'calculator', icon: Calculator, label: t('tool_calc') },
     { id: 'graph', icon: Activity, label: t('tool_graph') },
-    { id: 'physics', icon: atom, label: t('tool_physics') },
+    { id: 'physics', icon: Atom, label: t('tool_physics') },
     { id: 'chemistry', icon: FlaskConical, label: t('tool_chemistry') },
     { id: 'contact', icon: User, label: t('contact') },
   ];
